@@ -20,6 +20,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let wormhole = null;
 
+  function request(action, payload) {
+    return new Promise((resolve) => {
+      const onMessage = (event) => {
+        if (event.data?.type === 'tunecamp:response' && event.data?.action === action) {
+          window.removeEventListener('message', onMessage);
+          resolve(event.data.payload);
+        }
+      };
+      window.addEventListener('message', onMessage);
+      window.parent.postMessage({ type: 'tunecamp:request', action, payload }, '*');
+      setTimeout(() => {
+        window.removeEventListener('message', onMessage);
+        resolve(null);
+      }, 3000);
+    });
+  }
+
+  const tc = {
+    getUser: () => request('getUser'),
+    getLibrary: () => request('getLibrary', { limit: 50 }),
+  };
+
   const initPromise = (async () => {
     const zenInstance = ZEN;
 
@@ -127,6 +149,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => {
         elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
       }, 100);
+    });
+
+    // TuneCamp SDK Initialization
+    tc.getUser().then(user => {
+      if (user) {
+        elements.btnFetchLab.classList.remove('hidden');
+      }
+    });
+
+    elements.btnFetchLab.addEventListener('click', async () => {
+      setButtonLoading(elements.btnFetchLab, true, 'Loading library...');
+      const library = await tc.getLibrary();
+      setButtonLoading(elements.btnFetchLab, false);
+      
+      if (library && library.tracks && library.tracks.length > 0) {
+        elements.labTracks.innerHTML = '';
+        library.tracks.forEach(track => {
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-outline btn-accent justify-start text-left w-full';
+          btn.innerHTML = `<div class="truncate"><span class="font-bold">${track.title}</span><br/><span class="text-xs opacity-70">${track.artist}</span></div>`;
+          btn.onclick = async () => {
+            elements.labModal.close();
+            showStatus('send', 'info', `Scaricamento in corso: ${track.title}...`);
+            try {
+              const response = await fetch(track.streamUrl);
+              const blob = await response.blob();
+              const file = new File([blob], `${track.artist} - ${track.title}.mp3`, { type: blob.type || 'audio/mpeg', lastModified: Date.now() });
+              handleFileSelect(file);
+            } catch (e) {
+              console.error(e);
+              showStatus('send', 'error', 'Errore durante lo scaricamento della traccia dalla libreria.');
+            }
+          };
+          elements.labTracks.appendChild(btn);
+        });
+        elements.labModal.showModal();
+      } else {
+        showStatus('send', 'info', 'Libreria vuota o non accessibile.');
+      }
     });
   }
 
@@ -679,6 +740,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       chatOnlyInput: document.getElementById('chat-only-code'),
       nicknameInput: document.getElementById('chat-nickname'),
       fullscreenBtn: document.getElementById('fullscreen-chat-btn'),
+      btnFetchLab: document.getElementById('btn-fetch-lab'),
+      labModal: document.getElementById('lab-modal'),
+      labTracks: document.getElementById('lab-tracks'),
     };
   }
 

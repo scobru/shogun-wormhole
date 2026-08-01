@@ -86,6 +86,7 @@
             </div>
 
             <input type="file" id="fileInput" class="hidden" />
+            <button type="button" id="btn-fetch-lab" class="btn btn-outline btn-accent w-full hidden mb-4">Pick from TuneCamp Library</button>
 
             <div id="file-info-section" class="w-full hidden">
               <div class="bg-base-200 rounded-xl p-4 mb-4">
@@ -205,6 +206,16 @@
       </div>
     </div>
   </div>
+
+  <dialog id="lab-modal" class="modal">
+    <div class="modal-box bg-base-200">
+      <h3 class="font-bold text-lg mb-4 text-accent">TuneCamp Library</h3>
+      <div id="lab-tracks" class="flex flex-col gap-2 max-h-60 overflow-y-auto"></div>
+      <div class="modal-action">
+        <form method="dialog"><button class="btn">Close</button></form>
+      </div>
+    </div>
+  </dialog>
 
   <footer class="w-full py-5 px-1 mt-auto">
     <div class="w-full">
