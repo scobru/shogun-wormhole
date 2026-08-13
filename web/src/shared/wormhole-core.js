@@ -460,6 +460,10 @@ export class WormholeCore {
         encryptionSerialized: serializedEncryption,
       };
 
+      // Workaround for VPS race conditions:
+      // Wait for the ZEN WebSocket connection to establish before putting data.
+      await new Promise(r => setTimeout(r, 1500));
+
       this.gun.get('shogun/wormhole').get('transfers').get(code).put({
         createdAt: transferData.createdAt,
       });
