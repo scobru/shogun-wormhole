@@ -460,9 +460,8 @@ export class WormholeCore {
         encryptionSerialized: serializedEncryption,
       };
 
-      // Workaround for VPS race conditions:
       // Wait for the ZEN WebSocket connection to establish before putting data.
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, 1000));
 
       this.gun.get('shogun/wormhole').get('transfers').get(code).put({
         createdAt: transferData.createdAt,
@@ -478,16 +477,7 @@ export class WormholeCore {
 
       let streamingStarted = false;
 
-      const startP2PStreaming = async () => {
-        if (streamingStarted) return;
-        streamingStarted = true;
-
-        this.onStatusChange({
-          code,
-          status: WormholeStatus.STREAMING_P2P,
-          message: `Trasferimento P2P via WebRTC in corso (${totalChunks} chunk)...`,
-        });
-
+      const uploadChunks = async () => {
         const chunksNode = this.gun.get(`${code}-chunks`);
 
         for (let i = 0; i < totalChunks; i += 1) {
@@ -508,18 +498,20 @@ export class WormholeCore {
         }
 
         this.gun.get(`${code}-complete`).put({ complete: true, timestamp: Date.now() });
-
-        this.onStatusChange({
-          code,
-          status: WormholeStatus.SENT,
-          message: 'Tutti i dati P2P inviati! In attesa della conferma dal ricevente...',
-        });
       };
 
-      // Listen for receiver ready signal
+      // Immediately upload chunks to Gun so they are available on the relay network
+      void uploadChunks();
+
+      // Listen for receiver ready signal and re-stream if requested
       this.gun.get(`${code}-ready`).on((readyData) => {
         if (readyData && readyData.ready) {
-          void startP2PStreaming();
+          this.onStatusChange({
+            code,
+            status: WormholeStatus.STREAMING_P2P,
+            message: `Ricevente connesso! Trasferimento P2P in corso (${totalChunks} chunk)...`,
+          });
+          void uploadChunks();
         }
       });
 
@@ -723,6 +715,7 @@ export class WormholeCore {
 
         const timer = setTimeout(() => {
           if (!dataReceived) {
+            clearInterval(pollInterval);
             gunNode.off();
             reject(
               new Error(
@@ -739,12 +732,23 @@ export class WormholeCore {
             }
             dataReceived = true;
             clearTimeout(timer);
+            clearInterval(pollInterval);
             gunNode.off(listener);
             resolve(data);
           }
         };
 
         gunNode.on(listener);
+
+        // Periodically trigger query in case WebSocket connected after listener registration
+        const pollInterval = setInterval(() => {
+          if (dataReceived) {
+            clearInterval(pollInterval);
+            return;
+          }
+          gunNode.once(listener);
+          this.gun.get(code).once(listener);
+        }, 1000);
       });
     };
 
@@ -790,10 +794,12 @@ export class WormholeCore {
           const totalChunks = metadata.totalChunks || 1;
           const receivedChunks = new Map();
           let isFinalizing = false;
+          let chunkPollInterval = null;
 
           const finalizeP2PDownload = async () => {
             if (isFinalizing) return;
             isFinalizing = true;
+            if (chunkPollInterval) clearInterval(chunkPollInterval);
 
             this.onStatusChange({
               code,
@@ -870,7 +876,29 @@ export class WormholeCore {
             }
           };
 
+          // 1. Listen via map().on()
           this.gun.get(`${code}-chunks`).map().on(chunkListener);
+
+          // 2. Explicitly query each chunk index to guarantee no missed sub-nodes
+          for (let i = 0; i < totalChunks; i += 1) {
+            this.gun.get(`${code}-chunks`).get(String(i)).on(chunkListener);
+          }
+
+          // 3. Fallback poll in case some chunks are in flight or delayed
+          chunkPollInterval = setInterval(() => {
+            if (isFinalizing || receivedChunks.size === totalChunks) {
+              if (chunkPollInterval) clearInterval(chunkPollInterval);
+              return;
+            }
+            // Re-signal ready
+            this.gun.get(`${code}-ready`).put({ ready: true, timestamp: Date.now() });
+
+            for (let i = 0; i < totalChunks; i += 1) {
+              if (!receivedChunks.has(i)) {
+                this.gun.get(`${code}-chunks`).get(String(i)).once(chunkListener);
+              }
+            }
+          }, 1500);
 
           this.gun.get(`${code}-complete`).on((data) => {
             if (data && data.complete && receivedChunks.size === totalChunks) {

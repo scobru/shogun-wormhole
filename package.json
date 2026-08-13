@@ -9,7 +9,7 @@
   },
   "scripts": {
     "cli": "node src/index.js",
-    "build": "cd web && yarn install && yarn build && cd .. && rm -rf dist && cp -r web/dist dist",
+    "build": "cd web && yarn install && yarn build && cd .. && node -e \"const fs=require('fs'); fs.rmSync('dist', {recursive:true, force:true}); fs.cpSync('web/dist', 'dist', {recursive:true});\"",
     "dev": "cd web && yarn dev",
     "start": "npx serve dist",
     "test": "echo \"Error: no test specified\" && exit 1",

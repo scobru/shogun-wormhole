@@ -86,17 +86,14 @@ function setupCleanTerminalLogs() {
 setupCleanTerminalLogs();
 
 async function buildPeerList(relayUrl) {
-  const peerSet = new Set(DEFAULT_PEERS);
+  const peerSet = new Set();
 
   if (typeof relayUrl === 'string' && relayUrl.trim().length > 0) {
     const sanitized = relayUrl.replace(/\/$/, '');
     peerSet.add(`${sanitized}/zen`);
-
-    if (sanitized.startsWith('http://') || sanitized.startsWith('https://')) {
-      const wssPeer = sanitized.replace(/^http/, 'ws');
-      peerSet.add(`${wssPeer}/zen`);
-    }
   }
+
+  DEFAULT_PEERS.forEach((p) => peerSet.add(p));
 
   return Array.from(peerSet);
 }
@@ -274,6 +271,9 @@ class WormholeCLI {
 
       // Annuncia il trasferimento sulla rete locale via multicast
       this.announceTransfer(code, fileName, stats.size);
+
+      // Keep CLI process alive
+      setInterval(() => {}, 1000);
     } catch (error) {
       this.spinner.fail(`❌ Upload fallito: ${error.message}`);
       process.exit(1);
@@ -322,6 +322,9 @@ class WormholeCLI {
 
     // 2. Inizia ricezione via Zen/IPFS
     this.wormhole.receive(code, this.relayUrl);
+
+    // Keep CLI process alive
+    setInterval(() => {}, 1000);
   }
 
   // Ascolta messaggi multicast per scoprire trasferimenti locali
