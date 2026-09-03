@@ -31,8 +31,6 @@ import { webcrypto } from 'crypto';
 if (!globalThis.window) {
   globalThis.window = { crypto: webcrypto };
 }
-import { GroupService } from 'linda-core';
-
 import { WormholeCore, WormholeStatus } from './core.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -106,8 +104,6 @@ class WormholeCLI {
 
     this.relayUrl = relayUrl;
     this.authToken = authToken;
-
-    this.groupService = new GroupService(null);
 
     this.wormhole = new WormholeCore({
       gun,
@@ -368,62 +364,7 @@ class WormholeCLI {
     }
   }
 
-  // Helper per generare un GroupInfo compatibile da una password
-  async getGroupInfo(code) {
-    const hash = await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(code));
-    const b64 = Buffer.from(hash).toString('base64');
-    return { secret: b64 };
-  }
 
-  // Invia un messaggio cifrato
-  async sendMessage(code, message, sender = 'CLI') {
-    this.spinner.start('Cifratura e invio messaggio...');
-
-    try {
-      const groupInfo = await this.getGroupInfo(code);
-      const encrypted = await this.groupService.encryptGroupMessage(groupInfo, message);
-
-      this.wormhole.gun.get('wormhole/messages').get(code).set({
-        content: encrypted,
-        sender: sender,
-        timestamp: Date.now(),
-      });
-
-      this.spinner.succeed('Messaggio inviato correttamente!');
-    } catch (error) {
-      this.spinner.fail(`Errore invio: ${error.message}`);
-    }
-  }
-
-  // Ascolta messaggi cifrati
-  async listenForMessages(code) {
-    console.log(chalk.blue(`💬 In ascolto di messaggi cifrati per il codice: ${code}`));
-    console.log(chalk.gray('(Premi Ctrl+C per uscire)'));
-
-    const seen = new Set();
-    const groupInfo = await this.getGroupInfo(code);
-
-    this.wormhole.gun
-      .get('wormhole/messages')
-      .get(code)
-      .map()
-      .on(async (data, key) => {
-        if (data && data.content && !seen.has(key)) {
-          seen.add(key);
-          try {
-            const decrypted = await this.groupService.decryptGroupMessage(groupInfo, data.content);
-            if (decrypted && decrypted !== data.content) {
-              const date = new Date(data.timestamp).toLocaleTimeString();
-              console.log(
-                `\n${chalk.gray(`[${date}]`)} ${chalk.yellow.bold(data.sender)}: ${chalk.white(decrypted)}`
-              );
-            }
-          } catch (e) {
-            // Probably data we can't decrypt
-          }
-        }
-      });
-  }
 
   async saveFile(fileData, spinner) {
     const { blob, filename, buffer: dataBuffer } = fileData;
@@ -489,7 +430,6 @@ async function main() {
     console.log('Usage:');
     console.log('  wormhole send <file>     # Invia un file');
     console.log('  wormhole receive <code>  # Ricevi un file');
-    console.log('  wormhole msg <code> [nick] [message]  # Messaggistica cifrata');
     console.log('  wormhole list           # Lista trasferimenti');
     return;
   }
@@ -519,23 +459,6 @@ async function main() {
       await cli.listTransfers();
       break;
 
-    case 'msg':
-      if (!args[1]) {
-        console.log(chalk.red('❌ Specifica il codice'));
-        return;
-      }
-
-      if (args.length >= 4) {
-        await cli.sendMessage(args[1], args.slice(3).join(' '), args[2]);
-        setTimeout(() => process.exit(0), 1000);
-      } else if (args.length === 3) {
-        await cli.sendMessage(args[1], args[2]);
-        setTimeout(() => process.exit(0), 1000);
-      } else {
-        await cli.listenForMessages(args[1]);
-        setInterval(() => { }, 1000);
-      }
-      break;
 
     default:
       console.log(chalk.red(`❌ Comando sconosciuto: ${command}`));

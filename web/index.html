@@ -4,240 +4,214 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wormhole</title>
+  <title>Wormhole — Decentralized P2P File Transfer</title>
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-  <!-- Zen will be loaded via main.js import -->
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" rel="stylesheet" type="text/css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/styles/wormhole.css" />
-  <style>
-    /* Wormhole custom styles using DaisyUI dark theme */
-    .file-drop-zone {
-      border: 2px dashed hsl(var(--bc) / 0.3);
-      border-radius: 0.5rem;
-      padding: 2rem;
-      text-align: center;
-      color: hsl(var(--bc) / 0.7);
-      transition: all 0.2s ease;
-    }
-
-    .file-drop-zone:hover {
-      border-color: hsl(var(--a));
-      background-color: hsl(var(--b2));
-    }
-
-    .file-drop-zone:focus-visible {
-      outline: 2px solid hsl(var(--a));
-      outline-offset: 2px;
-    }
-
-    /* Fullscreen Chat Styles */
-    #chat-section.fullscreen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 1000;
-      background-color: hsl(var(--b1));
-      padding: 2rem;
-      margin-top: 0 !important;
-      display: flex;
-      flex-direction: column;
-      border-top: none !important;
-    }
-
-    #chat-section.fullscreen #chat-messages {
-      flex: 1;
-      height: auto !important;
-    }
-
-    #chat-section.fullscreen .chat-header-actions {
-      margin-bottom: 2rem;
-    }
-  </style>
 </head>
 
 <body class="antialiased flex flex-col min-h-screen">
-  <div class="flex-1 flex items-center justify-center p-4">
-    <div class="card w-full max-w-2xl bg-base-100 shadow-2xl">
-      <div class="p-8">
-        <div class="flex flex-col items-center">
-          <img src="/logo.svg" alt="Wormhole Logo" class="h-16 w-16 mb-4" />
+  <div class="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8">
+    <div class="wormhole-card w-full max-w-xl p-6 sm:p-8 transition-all duration-300">
+      <div class="flex flex-col items-center">
+        <!-- Logo Portal -->
+        <div class="logo-portal mb-4">
+          <img src="/logo.svg" alt="Wormhole Logo" class="h-14 w-14 drop-shadow-[0_0_12px_rgba(138,63,252,0.8)]" />
+        </div>
 
-          <h2 class="text-2xl font-semibold mb-2">Wormhole</h2>
-          <p class="text-base opacity-60 mb-8">Secure and private file transfer</p>
+        <h1 class="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-purple-200 mb-1">
+          Wormhole
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-400 mb-6 text-center flex items-center gap-1.5 font-medium">
+          <span>Decentralized P2P &amp; IPFS Transfer</span>
+          <span class="inline-block w-1 h-1 rounded-full bg-slate-600"></span>
+          <span class="text-purple-400 font-mono text-[11px] tracking-wide">E2EE</span>
+        </p>
 
-          <div class="tabs tabs-boxed bg-base-200 mb-8" role="tablist" aria-label="Transfer mode" data-tab-group="wormhole">
-            <button type="button" role="tab" class="tab tab-active" data-tab-button="send" aria-selected="true" aria-controls="send-tab" id="tab-send">Send</button>
-            <button type="button" role="tab" class="tab" data-tab-button="receive" aria-selected="false" aria-controls="receive-tab" id="tab-receive">Receive</button>
-            <button type="button" role="tab" class="tab" data-tab-button="chat-only" aria-selected="false" aria-controls="chat-only-tab" id="tab-chat-only">Chat</button>
-          </div>
+        <!-- Mode Switcher Tabs (Send / Receive) -->
+        <div class="wormhole-tabs mb-6" role="tablist" aria-label="Transfer Mode" data-tab-group="wormhole">
+          <button type="button" role="tab" class="wormhole-tab tab-active" data-tab-button="send" aria-selected="true" aria-controls="send-tab" id="tab-send">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Send</span>
+          </button>
+          <button type="button" role="tab" class="wormhole-tab" data-tab-button="receive" aria-selected="false" aria-controls="receive-tab" id="tab-receive">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>Receive</span>
+          </button>
+        </div>
 
-          <div id="send-tab" role="tabpanel" aria-labelledby="tab-send" class="w-full space-y-4" data-tab-panel="send">
-            <div id="send-prompt" role="button" tabindex="0" aria-label="Click or press Enter to upload a file"
-              class="file-drop-zone flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-base-200 transition-all duration-200">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-accent" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 15l-3-3m0 0l3-3m-3 3h12" />
+        <!-- ================= SEND TAB ================= -->
+        <div id="send-tab" role="tabpanel" aria-labelledby="tab-send" class="w-full space-y-4" data-tab-panel="send">
+          <!-- File Drop Zone -->
+          <div id="send-prompt" role="button" tabindex="0" aria-label="Click or drop a file to upload"
+            class="file-drop-zone flex flex-col items-center justify-center gap-3 select-none">
+            <div class="p-3.5 rounded-full bg-purple-900/30 text-purple-400 border border-purple-500/20 shadow-inner">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              <span class="text-sm opacity-60 text-center">Drag a file or click to select</span>
             </div>
-
-            <input type="file" id="fileInput" class="hidden" />
-            <button type="button" id="btn-fetch-lab" class="btn btn-outline btn-accent w-full hidden mb-4">Pick from TuneCamp Library</button>
-
-            <div id="file-info-section" class="w-full hidden">
-              <div class="bg-base-200 rounded-xl p-4 mb-4">
-                <h3 class="font-medium mb-2">Selected File:</h3>
-                <div id="file-details" class="text-sm opacity-70"></div>
-              </div>
-              <div class="bg-base-200 rounded-xl p-4 mb-4">
-                <h4 class="text-xs font-semibold uppercase tracking-wider opacity-60 mb-2">Transfer Mode</h4>
-                <div class="flex flex-col sm:flex-row gap-3">
-                  <label class="label cursor-pointer flex items-center gap-2 bg-base-100 px-3 py-2 rounded-lg flex-1 border border-accent/20">
-                    <input type="radio" name="transfer-mode" value="p2p" id="mode-p2p" checked class="radio radio-accent radio-sm" />
-                    <span class="label-text font-medium text-xs">⚡ Direct P2P (WebRTC)</span>
-                  </label>
-                  <label class="label cursor-pointer flex items-center gap-2 bg-base-100 px-3 py-2 rounded-lg flex-1 border border-base-300">
-                    <input type="radio" name="transfer-mode" value="ipfs" id="mode-ipfs" class="radio radio-accent radio-sm" />
-                    <span class="label-text font-medium text-xs">☁️ IPFS Relay (Async)</span>
-                  </label>
-                </div>
-              </div>
-              <button type="button" id="send-btn" class="btn btn-accent w-full" disabled>Start Transfer</button>
-            </div>
-
-            <div id="code-section" class="w-full hidden">
-              <div class="bg-base-200 rounded-xl p-4 mb-2">
-                <pre class="text-accent font-mono text-center tracking-wider"><code id="transfer-code"></code></pre>
-              </div>
-              <p class="text-xs opacity-70 text-center px-2">
-                The code is the end-to-end encryption key. Share it only with the intended recipient.
-              </p>
-              <button type="button" class="btn btn-accent w-full" data-action="copy-code">Copy Code</button>
-            </div>
-
-            <div id="send-status" class="mt-4" aria-live="polite"></div>
-            <div id="send-progress" class="w-full hidden">
-              <progress class="progress progress-accent w-full" value="0" max="100"></progress>
+            <div class="text-center">
+              <p class="font-medium text-sm text-slate-200">Drag &amp; drop your file here, or <span class="text-purple-400 underline underline-offset-2">browse</span></p>
+              <p class="text-[11px] text-slate-400 mt-1">End-to-end encrypted &bull; Max 100MB</p>
             </div>
           </div>
 
-          <div id="receive-tab" role="tabpanel" aria-labelledby="tab-receive" class="w-full hidden" data-tab-panel="receive">
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium mb-2" for="receive-code">Sync Code</label>
-                <input type="text" id="receive-code" placeholder="e.g.: 7-guitar-horse" maxlength="50"
-                  class="input input-bordered w-full" />
-              </div>
-              <button type="button" class="btn btn-accent w-full" id="receive-btn">Connect to Wormhole</button>
-              <div id="receive-status" aria-live="polite"></div>
-              <div id="receive-progress" class="w-full hidden">
-                <progress class="progress progress-accent w-full" value="0" max="100"></progress>
-              </div>
-            </div>
-          </div>
+          <input type="file" id="fileInput" class="hidden" />
 
-          <div id="chat-only-tab" role="tabpanel" aria-labelledby="tab-chat-only" class="w-full hidden" data-tab-panel="chat-only">
-            <div class="space-y-6">
-              <div class="bg-base-200 p-4 rounded-xl space-y-4">
-                <div>
-                  <label class="block text-sm font-medium mb-2" for="chat-nickname">Your Nickname (Optional)</label>
-                  <input type="text" id="chat-nickname" placeholder="e.g.: Satoshi" maxlength="20"
-                    class="input input-bordered w-full focus:input-accent" />
-                </div>
-                
-                <div class="divider text-xs opacity-40">CHOOSE ACTION</div>
+          <!-- TuneCamp Library Integration Button -->
+          <button type="button" id="btn-fetch-lab" class="btn btn-sm btn-outline border-purple-500/40 text-purple-300 hover:bg-purple-950/40 hover:border-purple-400 w-full hidden gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+            Pick from TuneCamp Library
+          </button>
 
-                <div class="flex flex-col gap-3">
-                  <button type="button" class="btn btn-outline btn-accent w-full" id="create-chat-btn">
-                    Create New Secure Chat
-                  </button>
-                  <div class="divider text-xs opacity-40">OR</div>
-                  <div>
-                    <label class="block text-sm font-medium mb-2" for="chat-only-code">Join with Code</label>
-                    <div class="flex gap-2">
-                      <input type="text" id="chat-only-code" placeholder="e.g.: 7-guitar-horse" maxlength="50"
-                        class="input input-bordered flex-1 focus:input-accent" />
-                      <button type="button" class="btn btn-accent" id="join-chat-btn">Join</button>
-                    </div>
-                  </div>
-                </div>
+          <!-- File Info & Options Section -->
+          <div id="file-info-section" class="w-full hidden space-y-4">
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex items-center justify-between gap-3 shadow-inner">
+              <div id="file-details" class="flex items-center gap-3 overflow-hidden flex-1">
+                <!-- Dynamically populated in main.js -->
               </div>
-              <div id="chat-only-status" aria-live="polite"></div>
-            </div>
-          </div>
-
-          <!-- Chat Section -->
-          <div id="chat-section" class="w-full mt-8 hidden border-t border-base-300 pt-6">
-            <div class="flex items-center justify-between mb-4 chat-header-actions">
-              <h3 class="text-lg font-medium flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-                Secure Chat
-              </h3>
-              <div class="flex items-center gap-2">
-                <button type="button" id="fullscreen-chat-btn" class="btn btn-ghost btn-xs btn-square" title="Toggle Fullscreen">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                </button>
-                <span class="badge badge-accent badge-outline text-xs">E2EE</span>
-              </div>
-            </div>
-            
-            <div id="chat-messages" class="h-64 overflow-y-auto bg-base-200 rounded-xl p-4 mb-4 space-y-3 flex flex-col scroll-smooth">
-              <div class="text-center text-xs opacity-40 py-2">Messages are end-to-end encrypted</div>
-            </div>
-            
-            <form id="chat-form" class="flex gap-2">
-              <input type="text" id="chat-input" placeholder="Type a message..." class="input input-bordered flex-1 focus:input-accent" autocomplete="off" />
-              <button type="submit" id="chat-send-btn" class="btn btn-accent btn-square">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              <button type="button" id="btn-remove-file" class="btn btn-ghost btn-circle btn-sm text-slate-400 hover:text-red-400 hover:bg-red-950/30" title="Remove / Change file">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-            </form>
+            </div>
+
+            <!-- Transfer Mode Selector -->
+            <div class="space-y-2">
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-1">Transfer Routing</div>
+              <div class="flex flex-col sm:flex-row gap-2.5">
+                <label class="mode-card cursor-pointer">
+                  <input type="radio" name="transfer-mode" value="p2p" id="mode-p2p" checked class="radio radio-accent radio-xs text-purple-500" />
+                  <div class="flex flex-col">
+                    <span class="font-medium text-xs text-slate-200">⚡ Direct P2P (WebRTC)</span>
+                    <span class="text-[10px] text-slate-400">Direct streaming between browsers</span>
+                  </div>
+                </label>
+                <label class="mode-card cursor-pointer">
+                  <input type="radio" name="transfer-mode" value="ipfs" id="mode-ipfs" class="radio radio-accent radio-xs text-purple-500" />
+                  <div class="flex flex-col">
+                    <span class="font-medium text-xs text-slate-200">☁️ IPFS Relay (Async)</span>
+                    <span class="text-[10px] text-slate-400">Decentralized staging relay</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <button type="button" id="send-btn" class="btn btn-wormhole w-full py-3 h-auto text-sm" disabled>
+              Start Transfer
+            </button>
+          </div>
+
+          <!-- Code Display Section -->
+          <div id="code-section" class="w-full hidden space-y-3">
+            <div class="code-display-box flex flex-col items-center justify-center text-center">
+              <span class="text-[10px] font-semibold uppercase tracking-widest text-purple-400 mb-1">Mnemonic Sync Code</span>
+              <code id="transfer-code" class="code-font select-all py-1"></code>
+            </div>
+
+            <p class="text-xs text-slate-400 text-center px-4 leading-relaxed">
+              Share this secret key with the recipient. The transfer begins automatically when connected.
+            </p>
+
+            <button type="button" class="btn btn-wormhole w-full py-2.5 h-auto text-sm gap-2" data-action="copy-code">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span>Copy Code</span>
+            </button>
+          </div>
+
+          <div id="send-status" class="mt-2" aria-live="polite"></div>
+          <div id="send-progress" class="w-full hidden mt-3">
+            <div class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Transferring...</span>
+              <span id="send-progress-pct" class="font-mono text-purple-400">0%</span>
+            </div>
+            <progress class="progress progress-accent w-full bg-slate-800" value="0" max="100"></progress>
+          </div>
+        </div>
+
+        <!-- ================= RECEIVE TAB ================= -->
+        <div id="receive-tab" role="tabpanel" aria-labelledby="tab-receive" class="w-full hidden space-y-4" data-tab-panel="receive">
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 space-y-3">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400" for="receive-code">
+              Enter Sync Code
+            </label>
+            <div class="relative flex items-center">
+              <input type="text" id="receive-code" placeholder="e.g.: 7-guitar-horse" maxlength="50" autocomplete="off" spellcheck="false"
+                class="input input-bordered w-full bg-slate-950/80 border-slate-700 text-slate-100 font-mono tracking-wide focus:border-purple-500 focus:ring-1 focus:ring-purple-500 pr-10 text-sm" />
+              <button type="button" id="btn-paste-code" class="absolute right-2 btn btn-ghost btn-xs text-slate-400 hover:text-purple-300" title="Paste from clipboard">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-400">
+              The code serves as the decryption key. Transmission happens directly and securely.
+            </p>
+          </div>
+
+          <button type="button" class="btn btn-wormhole w-full py-3 h-auto text-sm gap-2" id="receive-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>Connect &amp; Download</span>
+          </button>
+
+          <div id="receive-status" class="mt-2" aria-live="polite"></div>
+          <div id="receive-progress" class="w-full hidden mt-3">
+            <div class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Downloading &amp; Decrypting...</span>
+              <span id="receive-progress-pct" class="font-mono text-purple-400">0%</span>
+            </div>
+            <progress class="progress progress-accent w-full bg-slate-800" value="0" max="100"></progress>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- TuneCamp Library Modal -->
   <dialog id="lab-modal" class="modal">
-    <div class="modal-box bg-base-200">
-      <h3 class="font-bold text-lg mb-4 text-accent">TuneCamp Library</h3>
-      <div id="lab-tracks" class="flex flex-col gap-2 max-h-60 overflow-y-auto"></div>
+    <div class="modal-box bg-slate-900 border border-slate-800 text-slate-200">
+      <h3 class="font-bold text-base mb-3 text-purple-400 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+        </svg>
+        TuneCamp Library
+      </h3>
+      <div id="lab-tracks" class="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1"></div>
       <div class="modal-action">
-        <form method="dialog"><button class="btn">Close</button></form>
+        <form method="dialog"><button class="btn btn-sm btn-ghost">Close</button></form>
       </div>
     </div>
   </dialog>
 
-  <footer class="w-full py-5 px-1 mt-auto">
-    <div class="w-full">
-      <ul class="menu menu-horizontal w-full">
-        <div class="flex justify-center items-center gap-2 text-sm w-full">
-          <div class="text-center">
-            <a href="https://github.com/scobru/shogun-wormhole" target="_blank" rel="noreferrer" class="link">
-              Fork me
-            </a>
-          </div>
-          <span>·</span>
-          <div class="flex justify-center items-center gap-2">
-            <p class="m-0 text-center">
-              Built with 
-              <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-              </svg>
-              by <a href="https://github.com/scobru" target="_blank" rel="noreferrer" class="link">scobru</a>
-            </p>
-          </div>
-        </div>
-      </ul>
+  <!-- Clean, Semantic Footer -->
+  <footer class="w-full py-4 px-4 text-center text-xs text-slate-400 mt-auto border-t border-slate-900/50">
+    <div class="flex flex-wrap justify-center items-center gap-3">
+      <a href="https://github.com/scobru/wormhole" target="_blank" rel="noreferrer" class="hover:text-purple-400 transition-colors">
+        GitHub
+      </a>
+      <span class="opacity-30">&bull;</span>
+      <span>
+        Built with
+        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-3.5 w-3.5 text-purple-400 mx-0.5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+        by <a href="https://github.com/scobru" target="_blank" rel="noreferrer" class="text-slate-300 hover:text-purple-400 transition-colors font-medium">scobru</a>
+      </span>
+      <span class="opacity-30">&bull;</span>
+      <span class="text-slate-400 font-mono text-[11px]">v1.1.0</span>
     </div>
   </footer>
 
